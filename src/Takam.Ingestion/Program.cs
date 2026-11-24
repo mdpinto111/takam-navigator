@@ -16,7 +16,7 @@ using Takam.Ingestion;
 // Takam.Ingestion — prepares the search data.
 //   fetch            downloads the configured chapter from takam.mof.gov.il into data/raw
 //   build [--source sample|raw]   extracts the sections and builds data/takam.db (+ embeddings if the model is present)
-//   eval             compares the current site and the search modes on data/eval/questions.json
+//   eval [--details] compares the current site and the search modes on data/eval/questions.json
 //   inspect <code>   prints the sections extracted from a directive (e.g. inspect 1.4.3)
 
 Console.OutputEncoding = System.Text.Encoding.UTF8;
@@ -133,6 +133,13 @@ int Eval()
         var section = r.System.StartsWith("Current site") ? "—" : $"{r.SectionTop5}/{r.Answerable}";
         Console.WriteLine($"{r.System,-28} {r.DirectiveTop5 + "/" + r.Answerable,16} {section,15} {r.OffTopicRejected + "/" + r.OffTopicIds.Count,18}");
     }
+    // The table is the result; per-question signals and details are diagnostics, shown with --details.
+    if (!Environment.GetCommandLineArgs().Contains("--details"))
+    {
+        Console.WriteLine();
+        Console.WriteLine("(add --details for per-question diagnostics)");
+        return 0;
+    }
     if (engine.SemanticAvailable)
     {
         // Threshold tuning aid: confidence signals for each question (meaning, word coverage).
@@ -150,7 +157,7 @@ int Eval()
     {
         var q = questions.First(x => x.Id == o.QuestionId);
         var status = o.DirectiveFound ? (o.SectionFound ? "OK      " : "OK(dir) ") : "FAIL    ";
-        Console.WriteLine($"  {o.QuestionId} {status} rang={o.Rank?.ToString() ?? "-",-2} {q.Query}  →  {o.Detail}");
+        Console.WriteLine($"  {o.QuestionId} {status} rank={o.Rank?.ToString() ?? "-",-2} {q.Query}  →  {o.Detail}");
     }
     return 0;
 }
@@ -193,7 +200,7 @@ static int Usage()
         Usage: dotnet run --project src/Takam.Ingestion -- <command>
           fetch                        downloads the chapter from takam.mof.gov.il (data/raw)
           build [--source sample|raw]  builds the search database (data/takam.db)
-          eval                         compares the current site with the hybrid search (data/eval/questions.json)
+          eval [--details]             compares the current site with the hybrid search (data/eval/questions.json)
           inspect <code>               prints the sections extracted from a directive (e.g. 1.4.3)
         """);
     return 1;
