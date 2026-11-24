@@ -3,9 +3,9 @@ using Takam.Core.Model;
 namespace Takam.Core.Storage;
 
 /// <summary>
-/// Prépare les textes envoyés au modèle d'embeddings. Le modèle lit au plus 512 jetons : une section longue
-/// est coupée en morceaux qui se chevauchent d'une ligne. Chaque morceau rappelle la directive et le chapitre,
-/// pour garder le contexte (ex. "מועדי תשלום | הנחיות לביצוע | ...").
+/// Prepares the texts sent to the embedding model. The model reads at most 512 tokens: a long section
+/// is cut into chunks that overlap by one line. Each chunk repeats the directive and the chapter,
+/// to keep the context (e.g. "מועדי תשלום | הנחיות לביצוע | ...").
 /// </summary>
 public static class SectionChunker
 {

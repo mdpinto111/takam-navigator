@@ -8,8 +8,8 @@ using Takam.Core.Model;
 namespace Takam.Ingestion;
 
 /// <summary>
-/// Client de l'API publique du site (endpoints relevés dans le bundle Angular du site) :
-/// GET /api/Document, GET /api/DocumentVersion/{sfid}, GET /api/DocumentSF/DownloadDocument/{contentVersionId}/{nom}.
+/// Client for the site's public API (endpoints found in the site's Angular bundle):
+/// GET /api/Document, GET /api/DocumentVersion/{sfid}, GET /api/DocumentSF/DownloadDocument/{contentVersionId}/{name}.
 /// </summary>
 public sealed class TakamApiClient(HttpClient http, TakamApiOptions options, ILogger<TakamApiClient> logger)
 {
@@ -48,8 +48,8 @@ public sealed class TakamApiClient(HttpClient http, TakamApiOptions options, ILo
             $"DownloadDocument/{contentVersionId}", ct);
 
     /// <summary>
-    /// Télécharge l'édition en vigueur de chaque directive du chapitre configuré et écrit le manifeste.
-    /// Retourne aussi la liste complète des documents (utilisée par la copie de la recherche du site).
+    /// Downloads the current edition of each directive in the configured chapter and writes the manifest.
+    /// Also returns the full document list (used by the replica of the site's search).
     /// </summary>
     public async Task<(Manifest Manifest, List<ApiDocument> AllDocuments)> FetchChapterAsync(string targetDir, CancellationToken ct)
     {
@@ -60,7 +60,7 @@ public sealed class TakamApiClient(HttpClient http, TakamApiOptions options, ILo
             .Where(d => d.ValidTo is null || d.ValidTo >= today)
             .OrderBy(d => d.NameCode!.Split('.').Select(int.Parse).Aggregate(0L, (acc, n) => acc * 100 + n))
             .ToList();
-        logger.LogInformation("{Count} directives en vigueur dans le chapitre {Chapter}", directives.Count, options.MainChapter);
+        logger.LogInformation("{Count} directives in force in chapter {Chapter}", directives.Count, options.MainChapter);
 
         Directory.CreateDirectory(Path.Combine(targetDir, "docx"));
         var manifest = new Manifest
@@ -74,14 +74,14 @@ public sealed class TakamApiClient(HttpClient http, TakamApiOptions options, ILo
                 .OrderByDescending(v => v.VersionNumber).FirstOrDefault();
             if (current is null)
             {
-                logger.LogWarning("Directive {Code} : aucune édition publiée en vigueur, ignorée.", d.NameCode);
+                logger.LogWarning("Directive {Code}: no published edition in force, skipped.", d.NameCode);
                 continue;
             }
             var file = $"docx/{d.NameCode}.docx";
             var bytes = await DownloadAsync(current.ContentVersionId!, d.NameCode!, ct);
             if (bytes.Length < 4 || bytes[0] != (byte)'P' || bytes[1] != (byte)'K')
             {
-                logger.LogWarning("Directive {Code} : le fichier reçu n'est pas un .docx, ignorée.", d.NameCode);
+                logger.LogWarning("Directive {Code}: the received file is not a .docx, skipped.", d.NameCode);
                 continue;
             }
             await File.WriteAllBytesAsync(Path.Combine(targetDir, file), bytes, ct);
@@ -91,7 +91,7 @@ public sealed class TakamApiClient(HttpClient http, TakamApiOptions options, ILo
                 SubChapter = d.SubChapterName, Keywords = d.Keywords, Edition = current.VersionNumber,
                 ValidFrom = current.ValidFrom?.ToString("yyyy-MM-dd"), ContentVersionId = current.ContentVersionId, File = file
             });
-            logger.LogInformation("  {Code,-7} édition {Edition}  {Size,7:N0} octets", d.NameCode, current.VersionNumber, bytes.Length);
+            logger.LogInformation("  {Code,-7} edition {Edition}  {Size,7:N0} bytes", d.NameCode, current.VersionNumber, bytes.Length);
             await Task.Delay(options.DelayBetweenRequestsMs, ct);
         }
         return (manifest, all);
@@ -105,7 +105,7 @@ public sealed class TakamApiClient(HttpClient http, TakamApiOptions options, ILo
             catch (Exception ex) when (attempt < options.MaxRetries && ex is HttpRequestException or TaskCanceledException or JsonException && !ct.IsCancellationRequested)
             {
                 var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
-                logger.LogWarning("Échec {What} ({Error}), nouvel essai dans {Delay}s", what, ex.Message, delay.TotalSeconds);
+                logger.LogWarning("{What} failed ({Error}), retrying in {Delay}s", what, ex.Message, delay.TotalSeconds);
                 await Task.Delay(delay, ct);
             }
         }

@@ -2,7 +2,7 @@ namespace Takam.Core.Search;
 
 public enum SearchMode
 {
-    /// <summary>Mots (BM25) + sens (embeddings), fusionnés par RRF. Mode par défaut.</summary>
+    /// <summary>Keywords (BM25) + meaning (embeddings), merged with RRF. Default mode.</summary>
     Hybrid,
     Keyword,
     Semantic
@@ -10,7 +10,7 @@ public enum SearchMode
 
 public enum MatchKind
 {
-    /// <summary>La requête est un numéro de directive (ex. 1.4.3).</summary>
+    /// <summary>The query is a directive number (e.g. 1.4.3).</summary>
     DirectiveNumber,
     Keyword,
     Semantic,
@@ -38,7 +38,7 @@ public sealed record SearchHit
     public required string OfficialUrl { get; init; }
     public required MatchKind MatchedBy { get; init; }
     public double Score { get; init; }
-    /// <summary>Autres sections pertinentes de la même directive.</summary>
+    /// <summary>Other relevant sections of the same directive.</summary>
     public IReadOnlyList<SectionRef> OtherSections { get; init; } = [];
 }
 
@@ -47,10 +47,10 @@ public sealed record SearchResponse
     public required string Query { get; init; }
     public required SearchMode Mode { get; init; }
     public required bool Found { get; init; }
-    /// <summary>Message à afficher quand rien n'est assez pertinent.</summary>
+    /// <summary>Message to display when nothing is relevant enough.</summary>
     public string? Message { get; init; }
     public IReadOnlyList<SearchHit> Results { get; init; } = [];
-    /// <summary>Diagnostic : meilleure similarité sémantique (null si embeddings indisponibles).</summary>
+    /// <summary>Diagnostics: best semantic similarity (null if embeddings are unavailable).</summary>
     public double? BestSemanticScore { get; init; }
     public bool SemanticAvailable { get; init; }
     public long ElapsedMs { get; init; }
@@ -59,22 +59,22 @@ public sealed record SearchResponse
 public sealed class SearchOptions
 {
     public const string SectionName = "Search";
-    /// <summary>Constante k de la fusion RRF : score = Σ 1 / (k + rang).</summary>
+    /// <summary>RRF constant k: score = Σ 1 / (k + rank).</summary>
     public int RrfK { get; set; } = 60;
-    /// <summary>Nombre de candidats retenus par chaque recherche avant fusion.</summary>
+    /// <summary>Number of candidates kept by each retriever before fusion.</summary>
     public int CandidatesPerRetriever { get; set; } = 30;
-    // Seuil de confiance (calibré sur data/eval, voir README) : un résultat est jugé pertinent si
-    //   sens >= StrongSemanticScore, ou sens >= MinSemanticScore ET couverture >= MinSupportingCoverage,
-    //   ou couverture >= MinKeywordCoverage.
-    // Le cosinus seul ne suffit pas : avec e5 les scores sont tassés (0,77–0,93) et une question hors sujet
-    // ("איך מחדשים דרכון") atteint 0,857, plus qu'une vraie question (0,845).
-    /// <summary>Similarité cosinus suffisante à elle seule.</summary>
+    // Confidence threshold (calibrated on data/eval, see README): a result is considered relevant if
+    //   meaning >= StrongSemanticScore, or meaning >= MinSemanticScore AND coverage >= MinSupportingCoverage,
+    //   or coverage >= MinKeywordCoverage.
+    // Cosine alone is not enough: with e5 the scores are compressed (0.77–0.93) and an off-topic question
+    // ("איך מחדשים דרכון") reaches 0.857, higher than a real question (0.845).
+    /// <summary>Cosine similarity that is sufficient on its own.</summary>
     public double StrongSemanticScore { get; set; } = 0.90;
-    /// <summary>Similarité cosinus minimale quand au moins une partie des mots de la question est aussi présente.</summary>
+    /// <summary>Minimum cosine similarity when at least part of the question's words are also present.</summary>
     public double MinSemanticScore { get; set; } = 0.82;
-    /// <summary>Part des mots de la question qui doit appuyer un résultat sémantique.</summary>
+    /// <summary>Share of the question's words that must support a semantic result.</summary>
     public double MinSupportingCoverage { get; set; } = 0.30;
-    /// <summary>Part des mots de la question suffisante à elle seule (recherche par mots).</summary>
+    /// <summary>Share of the question's words that is sufficient on its own (keyword search).</summary>
     public double MinKeywordCoverage { get; set; } = 0.6;
     public int MaxTop { get; set; } = 20;
     public int MaxQueryLength { get; set; } = 300;

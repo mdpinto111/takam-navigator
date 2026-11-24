@@ -1,9 +1,9 @@
 namespace Takam.Core.Embeddings;
 
-/// <summary>Transforme un texte en vecteur normalisé (norme L2 = 1), qui représente son sens.</summary>
+/// <summary>Turns a text into a normalized vector (L2 norm = 1) that represents its meaning.</summary>
 public interface IEmbeddingService
 {
-    /// <summary>Identifiant du modèle, stocké avec l'index pour détecter un changement de modèle.</summary>
+    /// <summary>Model identifier, stored with the index to detect a model change.</summary>
     string ModelId { get; }
     int Dimensions { get; }
     float[] EmbedQuery(string query);
@@ -12,10 +12,10 @@ public interface IEmbeddingService
 
 public static class VectorMath
 {
-    /// <summary>Produit scalaire = similarité cosinus quand les vecteurs sont normalisés.</summary>
+    /// <summary>Dot product = cosine similarity when the vectors are normalized.</summary>
     public static float Dot(ReadOnlySpan<float> a, ReadOnlySpan<float> b)
     {
-        if (a.Length != b.Length) throw new ArgumentException("Dimensions différentes.");
+        if (a.Length != b.Length) throw new ArgumentException("Vector dimensions differ.");
         return System.Numerics.Tensors.TensorPrimitives.Dot(a, b);
     }
 

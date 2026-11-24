@@ -4,10 +4,10 @@ using System.Text.Json.Serialization;
 namespace Takam.Core.Site;
 
 /// <summary>
-/// Copie fidèle de la recherche libre du site takam.mof.gov.il (fonction filterByFreeTxt du bundle Angular,
-/// relevée le 24/11/2026) : la requête est découpée sur les espaces, et un document est retenu si TOUS les mots
-/// apparaissent, en sous-chaîne exacte, dans UN MÊME champ parmi : name, description, keywords, documentcodetext.
-/// Sert de point de comparaison dans l'évaluation.
+/// Faithful copy of the free-text search of takam.mof.gov.il (filterByFreeTxt function in the Angular bundle,
+/// read on 24/11/2026): the query is split on spaces, and a document matches if ALL the words
+/// appear, as exact substrings, in ONE SAME field among: name, description, keywords, documentcodetext.
+/// Used as the baseline in the evaluation.
 /// </summary>
 public sealed class SiteSearchReplica(IReadOnlyList<SiteSearchReplica.SiteDocument> documents)
 {
@@ -34,7 +34,7 @@ public sealed class SiteSearchReplica(IReadOnlyList<SiteSearchReplica.SiteDocume
                 .Any(field => field is not null && words.All(field.Contains))).ToList();
     }
 
-    /// <summary>Codes des directives (type Instruction) retournées.</summary>
+    /// <summary>Codes of the returned directives (Instruction type).</summary>
     public IReadOnlyList<string> SearchDirectiveCodes(string freeText) =>
         Search(freeText).Where(d => d.DocumentType == "Instruction" && d.NameCode is not null)
             .Select(d => d.NameCode!).Distinct().ToList();

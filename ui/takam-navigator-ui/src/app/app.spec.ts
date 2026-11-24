@@ -29,7 +29,7 @@ describe('App', () => {
 
   async function searchFor(text: string, response: SearchResponse | { status: number }) {
     const fixture = TestBed.createComponent(App);
-    fixture.detectChanges(); // déclenche ngOnInit (appel de santé)
+    fixture.detectChanges(); // triggers ngOnInit (health call)
     http.expectOne('/api/health').flush({ status: 'Healthy', semantic: true, index: { directives: 34, sections: 632 } });
     (fixture.componentInstance as unknown as { search(t: string): void }).search(text);
     const req = http.expectOne(r => r.url === '/api/search');

@@ -2,9 +2,9 @@ bin/
 obj/
 .vs/
 *.user
-# modèle d'embeddings (téléchargé par scripts/download-model.ps1)
+# embedding model (downloaded by scripts/download-model.ps1)
 models/
-# données générées
+# generated data
 data/raw/
 data/*.db
 data/*.db-*

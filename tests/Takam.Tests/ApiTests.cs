@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 namespace Takam.Tests;
 
 /// <summary>
-/// L'API HTTP de bout en bout, sur la base de test (sans le vrai modèle : recherche par mots, état "Degraded").
+/// The HTTP API end to end, on the test database (without the real model: keyword search, "Degraded" state).
 /// </summary>
 [Collection("search")]
 public class ApiTests(SearchFixture fx)
@@ -36,7 +36,7 @@ public class ApiTests(SearchFixture fx)
     [Fact]
     public async Task Health_is_503_when_database_is_missing()
     {
-        var client = Client(Path.Combine(Path.GetTempPath(), "absente.db"));
+        var client = Client(Path.Combine(Path.GetTempPath(), "missing.db"));
         Assert.Equal(HttpStatusCode.ServiceUnavailable, (await client.GetAsync("/api/health")).StatusCode);
         Assert.Equal(HttpStatusCode.ServiceUnavailable, (await client.GetAsync($"/api/search?q={Q("תשלום")}")).StatusCode);
     }

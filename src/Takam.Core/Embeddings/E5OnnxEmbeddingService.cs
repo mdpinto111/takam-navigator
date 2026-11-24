@@ -5,14 +5,14 @@ using Microsoft.ML.Tokenizers;
 namespace Takam.Core.Embeddings;
 
 /// <summary>
-/// Embeddings locaux avec le modèle intfloat/multilingual-e5-small (ONNX, licence MIT).
-/// Convention E5 : préfixe "query: " pour une question, "passage: " pour un texte indexé ;
-/// vecteur = moyenne des états cachés pondérée par le masque d'attention, puis normalisation L2.
+/// Local embeddings with the intfloat/multilingual-e5-small model (ONNX, MIT license).
+/// E5 convention: "query: " prefix for a question, "passage: " for an indexed text;
+/// vector = mean of the hidden states weighted by the attention mask, then L2 normalization.
 /// </summary>
 public sealed class E5OnnxEmbeddingService : IEmbeddingService, IDisposable
 {
-    // Identifiants XLM-RoBERTa (fairseq) : <s>=0, <pad>=1, </s>=2, <unk>=3 ; les autres = id SentencePiece + 1.
-    private const long BosId = 0, EosId = 2, UnkId = 3; // <pad>=1 inutile : une seule phrase par appel
+    // XLM-RoBERTa (fairseq) ids: <s>=0, <pad>=1, </s>=2, <unk>=3; all others = SentencePiece id + 1.
+    private const long BosId = 0, EosId = 2, UnkId = 3; // <pad>=1 not needed: one sentence per call
     private const int FairseqOffset = 1;
 
     private readonly InferenceSession _session;
@@ -26,8 +26,8 @@ public sealed class E5OnnxEmbeddingService : IEmbeddingService, IDisposable
 
     public E5OnnxEmbeddingService(string modelPath, string sentencePiecePath, int maxTokens = 512)
     {
-        if (!File.Exists(modelPath)) throw new FileNotFoundException("Modèle ONNX introuvable (voir scripts/download-model.ps1).", modelPath);
-        if (!File.Exists(sentencePiecePath)) throw new FileNotFoundException("Tokenizer SentencePiece introuvable.", sentencePiecePath);
+        if (!File.Exists(modelPath)) throw new FileNotFoundException("ONNX model not found (see scripts/download-model.ps1).", modelPath);
+        if (!File.Exists(sentencePiecePath)) throw new FileNotFoundException("SentencePiece tokenizer not found.", sentencePiecePath);
 
         var options = new SessionOptions { GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL };
         _session = new InferenceSession(modelPath, options);
@@ -41,13 +41,13 @@ public sealed class E5OnnxEmbeddingService : IEmbeddingService, IDisposable
     public float[] EmbedQuery(string query) => Embed("query: " + query);
     public float[] EmbedPassage(string passage) => Embed("passage: " + passage);
 
-    /// <summary>Identifiants de jetons au format XLM-R (exposé pour les tests de conformité).</summary>
+    /// <summary>Token ids in XLM-R format (exposed for the conformance tests).</summary>
     public long[] TokenIds(string text)
     {
         var spmIds = _tokenizer.EncodeToIds(text, addBeginningOfSentence: false, addEndOfSentence: false);
         var ids = new List<long>(spmIds.Count + 2) { BosId };
         foreach (var id in spmIds.Take(_maxTokens - 2))
-            ids.Add(id == 0 ? UnkId : id + FairseqOffset); // id 0 de SentencePiece = <unk>
+            ids.Add(id == 0 ? UnkId : id + FairseqOffset); // SentencePiece id 0 = <unk>
         ids.Add(EosId);
         return ids.ToArray();
     }
@@ -67,7 +67,7 @@ public sealed class E5OnnxEmbeddingService : IEmbeddingService, IDisposable
             inputs.Add(NamedOnnxValue.CreateFromTensor("token_type_ids", new DenseTensor<long>(new long[n], [1, n])));
 
         float[] pooled;
-        lock (_lock) // InferenceSession.Run est thread-safe, mais on limite la mémoire en sérialisant
+        lock (_lock) // InferenceSession.Run is thread-safe, but serializing keeps memory usage bounded
         {
             using var results = _session.Run(inputs);
             var hidden = results.First().AsTensor<float>(); // [1, n, dim]

@@ -6,7 +6,7 @@ using Takam.Core.Parsing;
 
 namespace Takam.Tests;
 
-/// <summary>Extraction des sections, sur les vrais fichiers de l'échantillon et sur des documents construits pour l'occasion.</summary>
+/// <summary>Section extraction, on the real sample files and on documents built for the test.</summary>
 public class DocxSectionParserTests
 {
     private static IReadOnlyList<Section> Parse(string code) => new DocxSectionParser().Parse(code, TestPaths.Docx(code));
@@ -19,7 +19,7 @@ public class DocxSectionParserTests
         Assert.Equal("הנחיות לביצוע", s21.Heading);
         Assert.Contains("לא יאוחר מ-45 ימים", s21.Text);
         var s15 = Assert.Single(sections, s => s.Label == "1.5");
-        Assert.Contains("1.5.1", s15.Text);             // les sous-points restent dans leur section
+        Assert.Contains("1.5.1", s15.Text);             // sub-items stay in their section
         Assert.Contains(sections, s => s.Label == "2.12");
     }
 
@@ -51,7 +51,7 @@ public class DocxSectionParserTests
     [Fact]
     public void Headings_numbered_through_their_style_give_chapter_numbers()
     {
-        // 1.6.5 : "מבוא" et "הנחיות לביצוע" sont numérotés par deux listes différentes ; Word affiche 1. puis 2.
+        // 1.6.5: "מבוא" and "הנחיות לביצוע" are numbered by two different lists; Word shows 1. then 2.
         var labels = Parse("1.6.5").Where(s => s.Kind == SectionKind.Body).Select(s => s.Label).ToList();
         Assert.Equal("1.1", labels[0]);
         Assert.Contains("2.1", labels);
@@ -94,11 +94,11 @@ public class DocxSectionParserTests
     [Fact]
     public void Corrupted_file_throws_a_clear_error()
     {
-        using var ms = new MemoryStream("ceci n'est pas un docx"u8.ToArray());
+        using var ms = new MemoryStream("this is not a docx"u8.ToArray());
         Assert.ThrowsAny<Exception>(() => new DocxSectionParser().Parse("9.9.9", ms));
     }
 
-    // ------------------------------------------------------------- construction de petits .docx de test
+    // ------------------------------------------------------------- building small test .docx files
 
     private static TableCell Cell(string text) => new(new Paragraph(new Run(new Text(text))));
 

@@ -1,25 +1,25 @@
 namespace Takam.Core.Configuration;
 
-/// <summary>Accès à l'API publique du site (pour l'ingestion).</summary>
+/// <summary>Access to the site's public API (for ingestion).</summary>
 public sealed class TakamApiOptions
 {
     public const string SectionName = "TakamApi";
     public string BaseUrl { get; set; } = "https://takam.mof.gov.il";
-    /// <summary>Chapitre principal à ingérer (périmètre du POC : 1 – ביצוע תקציב).</summary>
+    /// <summary>Main chapter to ingest (POC scope: 1 – ביצוע תקציב).</summary>
     public int MainChapter { get; set; } = 1;
     public int TimeoutSeconds { get; set; } = 60;
     public int MaxRetries { get; set; } = 2;
-    /// <summary>Pause entre deux téléchargements, pour ne pas charger le site.</summary>
+    /// <summary>Delay between two downloads, to avoid loading the site.</summary>
     public int DelayBetweenRequestsMs { get; set; } = 300;
 }
 
-/// <summary>Emplacements des données. Les chemins relatifs sont résolus depuis la racine du dépôt.</summary>
+/// <summary>Data locations. Relative paths are resolved from the repository root.</summary>
 public sealed class DataOptions
 {
     public const string SectionName = "Data";
-    /// <summary>Échantillon versionné (fonctionne hors ligne).</summary>
+    /// <summary>Versioned sample (works offline).</summary>
     public string SampleDir { get; set; } = "data/sample";
-    /// <summary>Données téléchargées par "fetch" (non versionnées). Prioritaires sur l'échantillon si présentes.</summary>
+    /// <summary>Data downloaded by "fetch" (not versioned). Takes precedence over the sample when present.</summary>
     public string RawDir { get; set; } = "data/raw";
     public string DatabasePath { get; set; } = "data/takam.db";
     public string EvalQuestionsPath { get; set; } = "data/eval/questions.json";
@@ -35,7 +35,7 @@ public sealed class EmbeddingOptions
 
 public static class RepoPaths
 {
-    /// <summary>Racine du dépôt : premier dossier parent contenant TakamNavigator.slnx (sinon le dossier courant).</summary>
+    /// <summary>Repository root: first parent folder containing TakamNavigator.slnx (otherwise the current folder).</summary>
     public static string Root { get; } = FindRoot();
 
     public static string Resolve(string path) =>

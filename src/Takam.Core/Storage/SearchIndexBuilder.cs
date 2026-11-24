@@ -6,19 +6,19 @@ using Takam.Core.Text;
 namespace Takam.Core.Storage;
 
 /// <summary>
-/// Construit la base SQLite de recherche : directives, sections, index plein texte FTS5 et vecteurs.
-/// La base est reconstruite entièrement à chaque exécution (quelques centaines de sections : quelques secondes
-/// sans modèle, environ une minute avec les embeddings). Elle est écrite dans un fichier temporaire puis
-/// renommée, pour que l'API ne lise jamais une base à moitié construite.
+/// Builds the SQLite search database: directives, sections, FTS5 full-text index and vectors.
+/// The database is fully rebuilt on each run (a few hundred sections: a few seconds
+/// without the model, about 20 seconds with embeddings). It is written to a temporary file and then
+/// renamed, so the API never reads a half-built database.
 /// </summary>
 public sealed class SearchIndexBuilder(IEmbeddingService? embeddings, Action<string>? log = null)
 {
     public const int SchemaVersion = 2;
 
     /// <summary>
-    /// Chapitres qui ne contiennent que des listes de titres (autres directives, lois, annexes) : conservés pour
-    /// l'affichage mais exclus de la recherche. Sinon ils remontent dès qu'une question cite le nom d'une autre directive,
-    /// alors qu'ils ne contiennent aucune règle (constaté sur l'évaluation : 1.4.3§3.6 pour « עבודות הנדסה בנאיות »).
+    /// Chapters that only contain lists of titles (other directives, laws, annexes): kept for
+    /// display but excluded from search. Otherwise they come up whenever a question mentions another directive's name,
+    /// even though they contain no rule (seen in the evaluation: 1.4.3§3.6 for "עבודות הנדסה בנאיות").
     /// </summary>
     public static readonly IReadOnlySet<string> ReferenceOnlyHeadings = new HashSet<string> { "מסמכים ישימים", "נספחים" };
 
@@ -26,8 +26,8 @@ public sealed class SearchIndexBuilder(IEmbeddingService? embeddings, Action<str
         !ReferenceOnlyHeadings.Contains(HebrewText.Normalize(s.Heading)) && !IsPointerOnly(s.Text);
 
     /// <summary>
-    /// Phrase de renvoi sans contenu ("ראה הגדרות הוראה זו בנספח א"). Trop courte, elle ne serait jugée que sur le titre
-    /// de la directive ajouté devant chaque morceau, et passerait devant la vraie règle.
+    /// Cross-reference sentence with no content ("ראה הגדרות הוראה זו בנספח א"). Being so short, it would be judged only on
+    /// the directive title prepended to each chunk, and would outrank the actual rule.
     /// </summary>
     public static bool IsPointerOnly(string text)
     {
@@ -75,7 +75,7 @@ public sealed class SearchIndexBuilder(IEmbeddingService? embeddings, Action<str
                 log?.Invoke($"  {d.Code,-7} {sections.Count,3} sections");
             }
             tx.Commit();
-            log?.Invoke($"Index : {manifest.Directives.Count} directives, {sectionCount} sections, {chunkCount} vecteurs.");
+            log?.Invoke($"Index: {manifest.Directives.Count} directives, {sectionCount} sections, {chunkCount} vectors.");
         }
         SqliteConnection.ClearAllPools();
         File.Move(tmp, databasePath, overwrite: true);

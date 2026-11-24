@@ -25,29 +25,29 @@ builder.Services.AddProblemDetails();
 var app = builder.Build();
 app.UseExceptionHandler();
 app.UseCors();
-_ = app.Services.GetRequiredService<SearchServices>(); // chargement au démarrage, pas à la première requête
+_ = app.Services.GetRequiredService<SearchServices>(); // load at startup, not on the first request
 
-const string NotLoaded = "La base de recherche n'est pas chargée.";
+const string NotLoaded = "The search database is not loaded.";
 
-// Recherche : q (obligatoire), top (1-20), mode (Hybrid|Keyword|Semantic), subChapter (filtre facultatif).
+// Search: q (required), top (1-20), mode (Hybrid|Keyword|Semantic), subChapter (optional filter).
 app.MapGet("/api/search", (string? q, int? top, SearchMode? mode, string? subChapter, SearchServices s, ILogger<Program> log) =>
 {
     if (s.Engine is null)
         return Results.Problem(NotLoaded, statusCode: StatusCodes.Status503ServiceUnavailable);
     if (string.IsNullOrWhiteSpace(q))
-        return Results.Problem("Le paramètre q est obligatoire.", statusCode: StatusCodes.Status400BadRequest);
+        return Results.Problem("The q parameter is required.", statusCode: StatusCodes.Status400BadRequest);
     if (q.Trim().Length > searchOptions.MaxQueryLength)
-        return Results.Problem($"La requête dépasse {searchOptions.MaxQueryLength} caractères.", statusCode: StatusCodes.Status400BadRequest);
+        return Results.Problem($"The query exceeds {searchOptions.MaxQueryLength} characters.", statusCode: StatusCodes.Status400BadRequest);
     if (mode == SearchMode.Semantic && !s.Engine.SemanticAvailable)
-        return Results.Problem("La recherche par le sens est indisponible (modèle absent).", statusCode: StatusCodes.Status503ServiceUnavailable);
+        return Results.Problem("Semantic search is unavailable (model missing).", statusCode: StatusCodes.Status503ServiceUnavailable);
 
     var response = s.Engine.Search(new SearchRequest(q, top ?? 5, mode ?? SearchMode.Hybrid, subChapter));
-    // Le texte de la requête n'est pas journalisé (il peut contenir des informations internes au ministère).
+    // The query text is not logged (it may contain internal ministry information).
     log.LogInformation("search mode={Mode} found={Found} results={Count} ms={Ms}", response.Mode, response.Found, response.Results.Count, response.ElapsedMs);
     return Results.Ok(response);
 });
 
-// Section complète, pour la lecture dans l'interface.
+// Full section, for reading in the UI.
 app.MapGet("/api/directives/{code}/sections/{order:int}", (string code, int order, SearchServices s) =>
 {
     if (s.Index is null) return Results.Problem(NotLoaded, statusCode: StatusCodes.Status503ServiceUnavailable);
@@ -64,12 +64,12 @@ app.MapGet("/api/directives/{code}/sections/{order:int}", (string code, int orde
     });
 });
 
-// Liste des directives indexées (sert au filtre par sous-chapitre).
+// List of indexed directives (used by the sub-chapter filter).
 app.MapGet("/api/directives", (SearchServices s) => s.Index is null
     ? Results.Problem(NotLoaded, statusCode: StatusCodes.Status503ServiceUnavailable)
     : Results.Ok(s.Index.Directives.Values.Select(d => new { d.Code, d.Name, d.SubChapter, d.Edition })));
 
-// Santé : 200 si la base est chargée (même sans modèle : "Degraded"), 503 sinon.
+// Health: 200 if the database is loaded (even without the model: "Degraded"), 503 otherwise.
 app.MapGet("/api/health", (SearchServices s) =>
 {
     var healthy = s.Index is not null;

@@ -20,7 +20,7 @@ public class HybridSearchEngineTests(SearchFixture fx)
     [Fact]
     public void Prefixed_words_match_their_stem()
     {
-        // "ולתשלום" (préfixes ו + ל) doit retrouver "תשלום" ; la directive sur les avances s'appelle "תשלום מקדמות".
+        // "ולתשלום" (prefixes ו + ל) must match "תשלום"; the directive on advance payments is called "תשלום מקדמות".
         var r = Engine().Search(new SearchRequest("ולתשלום מקדמות", Mode: SearchMode.Keyword));
         Assert.True(r.Found);
         Assert.Equal("1.4.5", r.Results[0].DirectiveCode);
@@ -36,7 +36,7 @@ public class HybridSearchEngineTests(SearchFixture fx)
         var hit = Assert.Single(r.Results);
         Assert.Equal("1.4.5", hit.DirectiveCode);
         Assert.Equal(MatchKind.DirectiveNumber, hit.MatchedBy);
-        Assert.StartsWith("2.", hit.SectionLabel);          // on ouvre sur "הנחיות לביצוע"
+        Assert.StartsWith("2.", hit.SectionLabel);          // opens on "הנחיות לביצוע"
         Assert.NotEmpty(hit.OtherSections);
     }
 
@@ -99,7 +99,7 @@ public class HybridSearchEngineTests(SearchFixture fx)
     [Fact]
     public void Reference_lists_are_not_returned()
     {
-        // "חוק מוסר תשלומים" figure dans la liste "מסמכים ישימים" de 1.4.3 : cette liste ne doit jamais être un résultat.
+        // "חוק מוסר תשלומים" appears in the "מסמכים ישימים" list of 1.4.3: that list must never be a result.
         var r = Engine().Search(new SearchRequest("חוק מוסר תשלומים", Top: 10, Mode: SearchMode.Keyword));
         Assert.DoesNotContain(r.Results, x => x.SectionHeading == "מסמכים ישימים");
     }
@@ -136,10 +136,10 @@ public class HybridSearchEngineTests(SearchFixture fx)
     public void Confidence_rule_combines_meaning_and_words()
     {
         var e = Engine();
-        Assert.True(e.IsConfident(0.91, 0));        // sens très fort
-        Assert.True(e.IsConfident(0.85, 0.33));     // sens correct + une partie des mots
-        Assert.False(e.IsConfident(0.857, 0.25));   // cas réel "איך מחדשים דרכון" : rejeté
-        Assert.True(e.IsConfident(null, 0.75));     // mots seuls (sans modèle)
+        Assert.True(e.IsConfident(0.91, 0));        // very strong meaning
+        Assert.True(e.IsConfident(0.85, 0.33));     // fair meaning + part of the words
+        Assert.False(e.IsConfident(0.857, 0.25));   // real case "איך מחדשים דרכון": rejected
+        Assert.True(e.IsConfident(null, 0.75));     // words only (no model)
         Assert.False(e.IsConfident(null, 0.5));
     }
 
@@ -167,7 +167,7 @@ public class ReciprocalRankFusionTests
     public void Scores_use_ranks_only()
     {
         var fused = HybridSearchEngine.ReciprocalRankFusion([("x", 1000.0)], [("y", 0.0001)], 60);
-        Assert.Equal(fused[0].Score, fused[1].Score, 10);       // même rang = même score, quelle que soit l'échelle
+        Assert.Equal(fused[0].Score, fused[1].Score, 10);       // same rank = same score, whatever the scale
     }
 
     [Fact]
@@ -202,6 +202,6 @@ public class SnippetBuilderTests
     {
         var (snippet, highlights) = SnippetBuilder.Build(new string('א', 500), [], 100);
         Assert.Empty(highlights);
-        Assert.Equal(101, snippet.Length);   // 100 caractères + "…"
+        Assert.Equal(101, snippet.Length);   // 100 characters + "…"
     }
 }

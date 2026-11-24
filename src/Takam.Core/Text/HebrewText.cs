@@ -5,18 +5,18 @@ using System.Text.RegularExpressions;
 namespace Takam.Core.Text;
 
 /// <summary>
-/// Normalisation du texte hébreu pour la recherche par mots.
-/// Problèmes traités : guillemets d'abréviation (תכ"ם / תכ״ם / תכ''ם), voyelles (ניקוד),
-/// caractères invisibles de direction, et préfixes collés au mot (ו, ה, ב, ל, מ, ש, כ).
+/// Hebrew text normalization for keyword search.
+/// Handles: abbreviation quotes (תכ"ם / תכ״ם / תכ''ם), vowel points (ניקוד),
+/// invisible direction marks, and prefixes attached to the word (ו, ה, ב, ל, מ, ש, כ).
 /// </summary>
 public static partial class HebrewText
 {
-    /// <summary>Lettres pouvant être un préfixe grammatical collé au mot.</summary>
+    /// <summary>Letters that can be a grammatical prefix attached to the word.</summary>
     private const string PrefixLetters = "והבלמשכ";
     private const int MinStemLength = 3;
-    private const int MaxPrefixLength = 3; // ex. "וכש", "שב", "והת"... on se limite à 3 lettres
+    private const int MaxPrefixLength = 3; // e.g. "וכש", "שב", "והת"... limited to 3 letters
 
-    /// <summary>Mots vides : trop fréquents pour aider la recherche.</summary>
+    /// <summary>Stop words: too frequent to help the search.</summary>
     public static readonly IReadOnlySet<string> StopWords = new HashSet<string>(StringComparer.Ordinal)
     {
         "של", "את", "על", "עם", "או", "גם", "כי", "אם", "לא", "כן", "יש", "אין", "זה", "זו", "זאת", "הוא", "היא",
@@ -25,7 +25,7 @@ public static partial class HebrewText
         "עושים", "לעשות", "ה", "ו", "ב", "ל", "מ", "ש"
     };
 
-    /// <summary>Supprime voyelles et caractères de contrôle, unifie guillemets et tirets, compacte les espaces.</summary>
+    /// <summary>Removes vowel points and control characters, unifies quotes and dashes, collapses spaces.</summary>
     public static string Normalize(string? input)
     {
         if (string.IsNullOrWhiteSpace(input)) return string.Empty;
@@ -33,25 +33,25 @@ public static partial class HebrewText
         foreach (var ch in input.Normalize(NormalizationForm.FormD))
         {
             var cat = CharUnicodeInfo.GetUnicodeCategory(ch);
-            if (cat == UnicodeCategory.NonSpacingMark) continue;           // ניקוד et autres marques
+            if (cat == UnicodeCategory.NonSpacingMark) continue;           // ניקוד and other marks
             if (cat == UnicodeCategory.Format) continue;                    // U+200E/U+200F, etc.
             sb.Append(ch switch
             {
-                '״' or '“' or '”' or '„' => '"',    // gershayim, guillemets typographiques
+                '״' or '“' or '”' or '„' => '"',    // gershayim, typographic quotes
                 '׳' or '‘' or '’' or '`' => '\'',         // geresh
-                '־' or '–' or '—' => '-',                  // maqaf, tirets
+                '־' or '–' or '—' => '-',                  // maqaf, dashes
                 ' ' => ' ',
                 _ => ch
             });
         }
         var s = sb.ToString().Normalize(NormalizationForm.FormC);
         s = s.Replace("''", "\"");
-        // Guillemets ou apostrophe à l'intérieur d'un mot hébreu = abréviation : תכ"ם -> תכם, מט"ח -> מטח
+        // Quote or apostrophe inside a Hebrew word = abbreviation: תכ"ם -> תכם, מט"ח -> מטח
         s = InWordQuote().Replace(s, "");
         return Spaces().Replace(s, " ").Trim();
     }
 
-    /// <summary>Découpe un texte normalisé en mots (lettres et chiffres, les nombres décimaux restent entiers).</summary>
+    /// <summary>Splits a normalized text into words (letters and digits; decimal numbers stay whole).</summary>
     public static IEnumerable<string> Tokenize(string? text)
     {
         foreach (Match m in Token().Matches(Normalize(text)))
@@ -59,8 +59,8 @@ public static partial class HebrewText
     }
 
     /// <summary>
-    /// Formes de recherche d'un mot : le mot lui-même et ses versions sans préfixe(s).
-    /// Ex. "והתשלום" → { "והתשלום", "התשלום", "תשלום" }.
+    /// Search forms of a word: the word itself and its versions without prefix(es).
+    /// E.g. "והתשלום" → { "והתשלום", "התשלום", "תשלום" }.
     /// </summary>
     public static IReadOnlyList<string> Variants(string token)
     {
@@ -76,11 +76,11 @@ public static partial class HebrewText
         return result;
     }
 
-    /// <summary>Texte d'indexation : chaque mot suivi de ses variantes sans préfixe.</summary>
+    /// <summary>Index text: each word followed by its prefix-less variants.</summary>
     public static string ToIndexText(string? text) =>
         string.Join(' ', Tokenize(text).SelectMany(Variants));
 
-    /// <summary>Mots significatifs d'une requête (normalisés, sans mots vides, dédupliqués).</summary>
+    /// <summary>Meaningful words of a query (normalized, without stop words, deduplicated).</summary>
     public static IReadOnlyList<string> QueryTerms(string? query) =>
         Tokenize(query).Where(t => !StopWords.Contains(t)).Distinct().ToList();
 

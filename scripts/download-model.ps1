@@ -1,5 +1,5 @@
-# Télécharge le modèle d'embeddings multilingual-e5-small (licence MIT) depuis Hugging Face.
-# Usage : powershell -ExecutionPolicy Bypass -File scripts/download-model.ps1
+# Downloads the multilingual-e5-small embedding model (MIT license) from Hugging Face.
+# Usage: powershell -ExecutionPolicy Bypass -File scripts/download-model.ps1
 param(
     [string]$Target = (Join-Path $PSScriptRoot "..\models\multilingual-e5-small")
 )

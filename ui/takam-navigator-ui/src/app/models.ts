@@ -1,4 +1,4 @@
-// Contrat de l'API Takam.Api (voir src/Takam.Core/Search/SearchModels.cs).
+// Takam.Api contract (see src/Takam.Core/Search/SearchModels.cs).
 
 export type SearchMode = 'Hybrid' | 'Keyword' | 'Semantic';
 export type MatchKind = 'DirectiveNumber' | 'Keyword' | 'Semantic' | 'Both';

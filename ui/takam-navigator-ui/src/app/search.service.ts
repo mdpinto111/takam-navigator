@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Health, SearchMode, SearchResponse, SectionDetail } from './models';
 
-/** Appels à Takam.Api. En développement, /api est redirigé vers l'API .NET par proxy.conf.json. */
+/** Calls to Takam.Api. In development, /api is forwarded to the .NET API by proxy.conf.json. */
 @Injectable({ providedIn: 'root' })
 export class SearchService {
   private readonly http = inject(HttpClient);
@@ -13,7 +13,7 @@ export class SearchService {
     return this.http.get<SearchResponse>('/api/search', { params });
   }
 
-  /** L'identifiant d'une section est "{code}#{ordre}" (ex. "1.4.3#7"). */
+  /** A section id is "{code}#{order}" (e.g. "1.4.3#7"). */
   section(sectionId: string): Observable<SectionDetail> {
     const [code, order] = sectionId.split('#');
     return this.http.get<SectionDetail>(`/api/directives/${encodeURIComponent(code)}/sections/${order}`);

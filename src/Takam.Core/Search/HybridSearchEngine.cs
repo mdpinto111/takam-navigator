@@ -9,16 +9,16 @@ using Takam.Core.Text;
 namespace Takam.Core.Search;
 
 /// <summary>
-/// Recherche hybride : par mots (BM25 sur FTS5) et par sens (similarité cosinus des embeddings),
-/// fusionnées par Reciprocal Rank Fusion. Seules les places comptent dans la fusion, ce qui évite de comparer
-/// des scores de nature différente. Les résultats sont regroupés par directive (meilleure section en tête).
+/// Hybrid search: by keywords (BM25 on FTS5) and by meaning (cosine similarity of embeddings),
+/// merged with Reciprocal Rank Fusion. Only ranks matter in the fusion, which avoids comparing
+/// scores of different kinds. Results are grouped by directive (best section first).
 /// </summary>
 public sealed partial class HybridSearchEngine(
     SearchIndex index, IEmbeddingService? embeddings, SearchOptions options, ILogger<HybridSearchEngine>? logger = null)
 {
     private readonly ILogger _log = logger ?? (ILogger)NullLogger.Instance;
 
-    /// <summary>Embeddings utilisables seulement si l'index a été construit avec le même modèle.</summary>
+    /// <summary>Embeddings are usable only if the index was built with the same model.</summary>
     public bool SemanticAvailable =>
         embeddings is not null && index.Vectors.Count > 0 && index.EmbeddingModel == embeddings.ModelId;
 
@@ -26,31 +26,31 @@ public sealed partial class HybridSearchEngine(
     {
         var sw = Stopwatch.StartNew();
         var query = (request.Query ?? "").Trim();
-        if (query.Length == 0) throw new ArgumentException("La requête est vide.", nameof(request));
-        if (query.Length > options.MaxQueryLength) throw new ArgumentException($"La requête dépasse {options.MaxQueryLength} caractères.", nameof(request));
+        if (query.Length == 0) throw new ArgumentException("The query is empty.", nameof(request));
+        if (query.Length > options.MaxQueryLength) throw new ArgumentException($"The query exceeds {options.MaxQueryLength} characters.", nameof(request));
         var top = Math.Clamp(request.Top, 1, options.MaxTop);
         var mode = request.Mode;
         if (mode != SearchMode.Keyword && !SemanticAvailable)
         {
             if (mode == SearchMode.Semantic)
-                throw new InvalidOperationException("La recherche par le sens est indisponible (modèle ou vecteurs absents).");
-            mode = SearchMode.Keyword; // dégradation : l'outil reste utilisable sans modèle
+                throw new InvalidOperationException("Semantic search is unavailable (model or vectors missing).");
+            mode = SearchMode.Keyword; // degradation: the tool stays usable without the model
         }
 
-        // 1) Numéro de directive : accès direct, sans recherche.
+        // 1) Directive number: direct access, no search.
         if (DirectiveNumber().Match(HebrewText.Normalize(query)) is { Success: true } num)
             return Done(ByDirectiveNumber(query, num.Groups[1].Value, mode), sw);
 
         var terms = HebrewText.QueryTerms(query);
         var sectionFilter = BuildFilter(request.SubChapter);
 
-        // 2) Recherche par mots.
+        // 2) Keyword search.
         var keyword = mode == SearchMode.Semantic ? [] :
             index.KeywordSearch(terms, options.CandidatesPerRetriever * 3)
                 .Where(k => sectionFilter(k.SectionId))
                 .Take(options.CandidatesPerRetriever).ToList();
 
-        // 3) Recherche par le sens : score d'une section = meilleur score de ses morceaux.
+        // 3) Semantic search: a section's score = best score among its chunks.
         List<(string SectionId, double Score)> semantic = [];
         double? bestSemantic = null;
         if (mode != SearchMode.Keyword)
@@ -66,14 +66,14 @@ public sealed partial class HybridSearchEngine(
             bestSemantic = semantic.Count > 0 ? semantic[0].Score : null;
         }
 
-        // 4) Seuil de confiance : on préfère "rien trouvé" à des résultats sans rapport.
+        // 4) Confidence threshold: "nothing found" is better than unrelated results.
         var coverageBase = mode == SearchMode.Semantic
             ? index.KeywordSearch(terms, options.CandidatesPerRetriever).Where(k => sectionFilter(k.SectionId)).ToList() : keyword;
         var bestCoverage = coverageBase.Select(k => Coverage(k.SectionId, terms)).DefaultIfEmpty(0).Max();
         var relevant = IsConfident(bestSemantic, terms.Count > 0 ? bestCoverage : 0);
         if (!relevant)
         {
-            _log.LogInformation("Aucun résultat pertinent pour {Query} (sens={Semantic:F3}, couverture={Coverage:P0})", query, bestSemantic, bestCoverage);
+            _log.LogInformation("No relevant result (meaning={Semantic:F3}, coverage={Coverage:P0})", bestSemantic, bestCoverage);
             return Done(new SearchResponse
             {
                 Query = query, Mode = mode, Found = false, Message = "לא נמצאה הוראה שעוסקת בנושא זה",
@@ -81,7 +81,7 @@ public sealed partial class HybridSearchEngine(
             }, sw);
         }
 
-        // 5) Fusion (ou classement simple dans les modes à un seul moteur).
+        // 5) Fusion (or plain ranking in single-retriever modes).
         var fused = mode switch
         {
             SearchMode.Keyword => keyword.Select(k => (k.SectionId, k.Score)).ToList(),
@@ -91,7 +91,7 @@ public sealed partial class HybridSearchEngine(
         var keywordIds = keyword.Select(k => k.SectionId).ToHashSet();
         var semanticIds = semantic.Where(s => s.Score >= options.MinSemanticScore).Select(s => s.SectionId).ToHashSet();
 
-        // 6) Regroupement par directive : meilleure section + autres sections pertinentes.
+        // 6) Group by directive: best section + other relevant sections.
         var results = new List<SearchHit>();
         var others = new Dictionary<string, List<SectionRef>>();
         foreach (var (sectionId, score) in fused)
@@ -130,7 +130,7 @@ public sealed partial class HybridSearchEngine(
         || ((semantic ?? 0) >= options.MinSemanticScore && coverage >= options.MinSupportingCoverage)
         || coverage >= options.MinKeywordCoverage;
 
-    /// <summary>Signaux de confiance bruts d'une requête (pour le réglage des seuils) : meilleur cosinus, meilleure couverture des mots.</summary>
+    /// <summary>Raw confidence signals of a query (for threshold tuning): best cosine, best word coverage.</summary>
     public (double? BestSemantic, double BestCoverage) ConfidenceSignals(string query)
     {
         var terms = HebrewText.QueryTerms(query);
@@ -140,7 +140,7 @@ public sealed partial class HybridSearchEngine(
         return (sem, cov);
     }
 
-    /// <summary>RRF : chaque section gagne 1/(k + rang) dans chaque liste où elle apparaît.</summary>
+    /// <summary>RRF: each section earns 1/(k + rank) in every list where it appears.</summary>
     public static List<(string SectionId, double Score)> ReciprocalRankFusion(
         IReadOnlyList<(string SectionId, double Score)> a, IReadOnlyList<(string SectionId, double Score)> b, int k)
     {
@@ -155,7 +155,7 @@ public sealed partial class HybridSearchEngine(
             .Select(x => (x.Key, x.Value)).ToList();
     }
 
-    /// <summary>Part des mots de la requête présents (sous une de leurs formes) dans la section.</summary>
+    /// <summary>Share of the query words present (in one of their forms) in the section.</summary>
     public double Coverage(string sectionId, IReadOnlyList<string> terms)
     {
         if (terms.Count == 0) return 0;
@@ -172,7 +172,7 @@ public sealed partial class HybridSearchEngine(
                 Query = query, Mode = mode, Found = false, Message = $"הוראה {code} אינה קיימת במאגר",
                 SemanticAvailable = SemanticAvailable
             };
-        var first = sections.FirstOrDefault(s => s.Section.Label.StartsWith("2")) ?? sections[0]; // "הנחיות לביצוע" en priorité
+        var first = sections.FirstOrDefault(s => s.Section.Label.StartsWith("2")) ?? sections[0]; // "הנחיות לביצוע" first
         var hit = ToHit(first, [], MatchKind.DirectiveNumber, 1.0) with
         {
             OtherSections = sections.Where(s => s != first).Take(5).Select(s => new SectionRef(s.Section.Id, s.Section.Label, s.Section.Heading)).ToList()

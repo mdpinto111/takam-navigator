@@ -5,14 +5,14 @@ using Takam.Core.Storage;
 
 namespace Takam.Core.Evaluation;
 
-/// <summary>Une question de test et sa bonne réponse (data/eval/questions.json).</summary>
+/// <summary>A test question and its correct answer (data/eval/questions.json).</summary>
 public sealed record EvalQuestion
 {
     public required string Id { get; init; }
     public required string Query { get; init; }
     public string? Keywords { get; init; }
     public string? ExpectedDirective { get; init; }
-    /// <summary>Phrase présente dans la bonne section (plus robuste qu'un numéro de section).</summary>
+    /// <summary>Phrase found in the correct section (more robust than a section number).</summary>
     public string? ExpectedSectionContains { get; init; }
     public string Kind { get; init; } = "";
 
@@ -24,18 +24,18 @@ public sealed record EvalOutcome(string QuestionId, bool DirectiveFound, bool Se
 
 public sealed record EvalReport(string System, IReadOnlyList<EvalOutcome> Outcomes)
 {
-    /// <summary>Questions qui ont une bonne réponse (hors question hors sujet).</summary>
+    /// <summary>Questions that have a correct answer (off-topic questions excluded).</summary>
     public int Answerable { get; init; }
     public int DirectiveTop5 => Outcomes.Count(o => o.DirectiveFound && !OffTopicIds.Contains(o.QuestionId));
     public int SectionTop5 => Outcomes.Count(o => o.SectionFound && !OffTopicIds.Contains(o.QuestionId));
-    /// <summary>Questions hors sujet pour lesquelles rien n'a été renvoyé (attendu).</summary>
+    /// <summary>Off-topic questions for which nothing was returned (expected).</summary>
     public int OffTopicRejected => Outcomes.Count(o => o.DirectiveFound && OffTopicIds.Contains(o.QuestionId));
     public IReadOnlySet<string> OffTopicIds { get; init; } = new HashSet<string>();
 }
 
 /// <summary>
-/// Mesure la qualité de recherche : la bonne directive (et la bonne section) est-elle dans les 5 premiers résultats ?
-/// La question hors sujet doit, elle, ne rien renvoyer.
+/// Measures search quality: is the correct directive (and the correct section) in the top 5 results?
+/// Off-topic questions must return nothing.
 /// </summary>
 public sealed class Evaluator(SearchIndex index, HybridSearchEngine engine, SiteSearchReplica? site)
 {
@@ -51,7 +51,7 @@ public sealed class Evaluator(SearchIndex index, HybridSearchEngine engine, Site
             if (q.ExpectedDirective is null)
             {
                 outcomes.Add(new EvalOutcome(q.Id, !response.Found, !response.Found, null,
-                    response.Found ? $"aurait dû ne rien trouver, a renvoyé {response.Results[0].DirectiveCode}" : "rien trouvé (attendu)"));
+                    response.Found ? $"should have found nothing, returned {response.Results[0].DirectiveCode}" : "nothing found (expected)"));
                 continue;
             }
             var rank = response.Results.ToList().FindIndex(r => r.DirectiveCode == q.ExpectedDirective);
@@ -59,10 +59,10 @@ public sealed class Evaluator(SearchIndex index, HybridSearchEngine engine, Site
             outcomes.Add(new EvalOutcome(q.Id, rank >= 0, sectionFound, rank >= 0 ? rank + 1 : null,
                 string.Join(", ", response.Results.Select(r => $"{r.DirectiveCode}§{r.SectionLabel}"))));
         }
-        return Report($"{mode}{(useKeywordsVariant ? " (mots-clés)" : "")}", questions, outcomes);
+        return Report($"{mode}{(useKeywordsVariant ? " (keywords)" : "")}", questions, outcomes);
     }
 
-    /// <summary>Le site ne classe pas ses résultats : on considère la directive trouvée si elle est dans la liste.</summary>
+    /// <summary>The site does not rank its results: the directive counts as found if it is in the list.</summary>
     public EvalReport RunSite(IReadOnlyList<EvalQuestion> questions, bool useKeywordsVariant)
     {
         ArgumentNullException.ThrowIfNull(site);
@@ -73,15 +73,15 @@ public sealed class Evaluator(SearchIndex index, HybridSearchEngine engine, Site
             var codes = site.SearchDirectiveCodes(text);
             var all = site.Search(text).Count;
             var found = q.ExpectedDirective is null ? all == 0 : codes.Contains(q.ExpectedDirective);
-            outcomes.Add(new EvalOutcome(q.Id, found, false, null, $"{all} résultat(s) : {string.Join(", ", codes.Take(5))}"));
+            outcomes.Add(new EvalOutcome(q.Id, found, false, null, $"{all} result(s): {string.Join(", ", codes.Take(5))}"));
         }
-        return Report($"Site actuel{(useKeywordsVariant ? " (mots-clés)" : " (phrase)")}", questions, outcomes);
+        return Report($"Current site{(useKeywordsVariant ? " (keywords)" : " (sentence)")}", questions, outcomes);
     }
 
     private bool SectionMatches(EvalQuestion q, SearchHit hit)
     {
         if (q.ExpectedSectionContains is null) return true;
-        var ids = new[] { hit.SectionId }.Concat(hit.OtherSections.Select(o => o.SectionId)).Take(1); // seule la section affichée compte
+        var ids = new[] { hit.SectionId }.Concat(hit.OtherSections.Select(o => o.SectionId)).Take(1); // only the displayed section counts
         return ids.Any(id => index.Sections.TryGetValue(id, out var s) && s.Section.Text.Contains(q.ExpectedSectionContains));
     }
 

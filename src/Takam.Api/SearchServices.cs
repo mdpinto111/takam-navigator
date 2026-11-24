@@ -6,8 +6,8 @@ using Takam.Core.Storage;
 namespace Takam.Api;
 
 /// <summary>
-/// Charge la base de recherche et le modèle au démarrage. Si la base manque, l'API démarre quand même
-/// (la santé passe à "Unhealthy" et /api/search répond 503) ; si le modèle manque, la recherche continue par mots.
+/// Loads the search database and the model at startup. If the database is missing, the API still starts
+/// (health becomes "Unhealthy" and /api/search returns 503); if the model is missing, search falls back to keywords.
 /// </summary>
 public sealed class SearchServices : IDisposable
 {
@@ -24,21 +24,21 @@ public sealed class SearchServices : IDisposable
         try
         {
             Index = SearchIndex.Open(DatabasePath);
-            log.LogInformation("Base chargée : {Directives} directives, {Sections} sections, {Vectors} vecteurs ({Path})",
+            log.LogInformation("Database loaded: {Directives} directives, {Sections} sections, {Vectors} vectors ({Path})",
                 Index.Directives.Count, Index.Sections.Count, Index.Vectors.Count, DatabasePath);
         }
         catch (Exception ex)
         {
             IndexError = ex.Message;
-            log.LogError("Base de recherche indisponible ({Path}) : {Error}. Lancer : dotnet run --project src/Takam.Ingestion -- build",
+            log.LogError("Search database unavailable ({Path}): {Error}. Run: dotnet run --project src/Takam.Ingestion -- build",
                 DatabasePath, ex.Message);
             return;
         }
         Embeddings = EmbeddingFactory.TryCreate(embeddingOptions, log);
         Engine = new HybridSearchEngine(Index, Embeddings, searchOptions, loggers.CreateLogger<HybridSearchEngine>());
         if (Embeddings is not null && !Engine.SemanticAvailable)
-            log.LogWarning("La base a été construite avec un autre modèle ({IndexModel}) que celui chargé ({Model}) : recherche par mots seulement.",
-                Index.EmbeddingModel ?? "aucun", Embeddings.ModelId);
+            log.LogWarning("The database was built with a different model ({IndexModel}) than the loaded one ({Model}): keyword search only.",
+                Index.EmbeddingModel ?? "none", Embeddings.ModelId);
     }
 
     public void Dispose()

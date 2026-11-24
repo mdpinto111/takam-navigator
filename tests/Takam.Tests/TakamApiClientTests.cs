@@ -6,7 +6,7 @@ using Takam.Ingestion;
 
 namespace Takam.Tests;
 
-/// <summary>Client de l'API du site, testé avec un faux serveur HTTP (aucun appel réseau).</summary>
+/// <summary>Client for the site's API, tested with a fake HTTP server (no network calls).</summary>
 public class TakamApiClientTests : IDisposable
 {
     private readonly string _dir = Path.Combine(Path.GetTempPath(), $"takam-fetch-{Guid.NewGuid():N}");
@@ -32,8 +32,8 @@ public class TakamApiClientTests : IDisposable
     {
         var handler = new FakeHandler(_ => new HttpResponseMessage(HttpStatusCode.InternalServerError));
         await Assert.ThrowsAsync<HttpRequestException>(() => Client(handler).FetchChapterAsync(_dir, CancellationToken.None));
-        Assert.Equal(2, handler.Calls.Count);                 // 1 essai + 1 nouvel essai
-        Assert.False(File.Exists(Path.Combine(_dir, "manifest.json")));   // rien n'est écrasé
+        Assert.Equal(2, handler.Calls.Count);                 // 1 attempt + 1 retry
+        Assert.False(File.Exists(Path.Combine(_dir, "manifest.json")));   // nothing is overwritten
     }
 
     [Fact]
@@ -61,9 +61,9 @@ public class TakamApiClientTests : IDisposable
         var (manifest, all) = await Client(handler).FetchChapterAsync(_dir, CancellationToken.None);
 
         Assert.Equal(5, all.Count);
-        var d = Assert.Single(manifest.Directives);           // 2.1.1 hors chapitre, 1.9.9 périmée, 1.4.4 pas un docx
+        var d = Assert.Single(manifest.Directives);           // 2.1.1 other chapter, 1.9.9 expired, 1.4.4 not a docx
         Assert.Equal("1.4.3", d.Code);
-        Assert.Equal(6, d.Edition);                            // l'édition en vigueur, pas l'ancienne
+        Assert.Equal(6, d.Edition);                            // the current edition, not the old one
         Assert.Equal("CV-A", d.ContentVersionId);
         Assert.Equal("2024-02-01", d.ValidFrom);
         Assert.True(File.Exists(Path.Combine(_dir, "docx", "1.4.3.docx")));

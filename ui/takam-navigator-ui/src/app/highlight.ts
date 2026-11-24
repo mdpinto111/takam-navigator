@@ -3,8 +3,8 @@ import { HighlightRange } from './models';
 export interface Segment { text: string; mark: boolean; }
 
 /**
- * Découpe l'extrait en morceaux normaux et surlignés à partir des positions renvoyées par l'API.
- * On produit des morceaux de texte (rendus par interpolation) plutôt que du HTML : aucun risque d'injection.
+ * Splits the snippet into plain and highlighted pieces using the positions returned by the API.
+ * It produces text pieces (rendered by interpolation) rather than HTML: no injection risk.
  */
 export function toSegments(text: string, highlights: HighlightRange[]): Segment[] {
   const ranges = [...highlights]
@@ -13,7 +13,7 @@ export function toSegments(text: string, highlights: HighlightRange[]): Segment[
   const segments: Segment[] = [];
   let pos = 0;
   for (const r of ranges) {
-    if (r.start < pos) continue; // chevauchement : on garde le premier
+    if (r.start < pos) continue; // overlap: keep the first one
     if (r.start > pos) segments.push({ text: text.slice(pos, r.start), mark: false });
     segments.push({ text: text.slice(r.start, r.start + r.length), mark: true });
     pos = r.start + r.length;

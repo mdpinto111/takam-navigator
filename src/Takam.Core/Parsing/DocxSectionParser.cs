@@ -9,13 +9,13 @@ using Takam.Core.Model;
 namespace Takam.Core.Parsing;
 
 /// <summary>
-/// Extrait le texte d'une directive (.docx) et le découpe en sections numérotées.
-/// La numérotation (1, 1.1, 2.12...) n'est pas dans le texte : Word la génère à partir des styles et des
-/// définitions de listes. On la recalcule comme Word pour que les numéros correspondent à ceux du document.
+/// Extracts the text of a directive (.docx) and splits it into numbered sections.
+/// The numbering (1, 1.1, 2.12...) is not in the text: Word generates it from the styles and the
+/// list definitions. We recompute it the way Word does so that the numbers match the document.
 /// </summary>
 public sealed partial class DocxSectionParser
 {
-    /// <summary>Un paragraphe (ou un tableau) avec sa numérotation calculée.</summary>
+    /// <summary>A paragraph (or a table) with its computed numbering.</summary>
     public sealed record Block(string Text, string? Label, int? Level, bool IsTable);
 
     public IReadOnlyList<Section> Parse(string directiveCode, Stream docx)
@@ -30,14 +30,14 @@ public sealed partial class DocxSectionParser
         return Parse(directiveCode, fs);
     }
 
-    // ------------------------------------------------------------------ lecture et numérotation
+    // ------------------------------------------------------------------ reading and numbering
 
     public IReadOnlyList<Block> ReadBlocks(Stream docx)
     {
         using var doc = WordprocessingDocument.Open(docx, false);
-        var main = doc.MainDocumentPart ?? throw new InvalidDataException("Document Word sans partie principale.");
+        var main = doc.MainDocumentPart ?? throw new InvalidDataException("Word document has no main part.");
         var numbering = new NumberingResolver(main);
-        var body = main.Document?.Body ?? throw new InvalidDataException("Document Word sans corps.");
+        var body = main.Document?.Body ?? throw new InvalidDataException("Word document has no body.");
 
         var blocks = new List<Block>();
         foreach (var element in Flatten(body))
@@ -59,7 +59,7 @@ public sealed partial class DocxSectionParser
         return blocks;
     }
 
-    /// <summary>Paragraphes et tableaux de premier niveau, en traversant les contrôles de contenu (sdt).</summary>
+    /// <summary>Top-level paragraphs and tables, walking through content controls (sdt).</summary>
     private static IEnumerable<OpenXmlElement> Flatten(OpenXmlElement parent)
     {
         foreach (var child in parent.ChildElements)
@@ -71,8 +71,8 @@ public sealed partial class DocxSectionParser
     }
 
     /// <summary>
-    /// Texte visible d'un paragraphe. On ne lit que les éléments w:t (texte affiché) : les codes de champ
-    /// (w:instrText, ex. "REF _Ref486944326 \r \h") et le texte supprimé (w:delText) sont exclus d'office.
+    /// Visible text of a paragraph. Only w:t elements (displayed text) are read: field codes
+    /// (w:instrText, e.g. "REF _Ref486944326 \r \h") and deleted text (w:delText) are excluded by design.
     /// </summary>
     private static string ParagraphText(Paragraph p)
     {
@@ -102,7 +102,7 @@ public sealed partial class DocxSectionParser
         return string.Join('\n', lines);
     }
 
-    /// <summary>Supprime les caractères de direction, les restes de codes de champ et les espaces en trop.</summary>
+    /// <summary>Removes direction marks, leftover field codes and extra spaces.</summary>
     public static string CleanText(string s)
     {
         s = s.Replace("‎", "").Replace("‏", "").Replace("‫", "").Replace("‬", "").Replace(' ', ' ');
@@ -110,13 +110,13 @@ public sealed partial class DocxSectionParser
         return Spaces().Replace(s, " ").Trim();
     }
 
-    // ------------------------------------------------------------------ découpage en sections
+    // ------------------------------------------------------------------ splitting into sections
 
     private static readonly Regex AnnexStart = AnnexStartRegex();
 
     public IReadOnlyList<Section> BuildSections(string code, IReadOnlyList<Block> blocks)
     {
-        // Directive sans aucune numérotation de plan (ex. 1.3.3 : un seul paragraphe de renvoi) : une seule section.
+        // Directive with no outline numbering at all (e.g. 1.3.3: a single cross-reference paragraph): one section.
         if (blocks.Count > 0 && blocks.All(b => b.Level is null) && !blocks.Any(b => !b.IsTable && AnnexStart.IsMatch(b.Text)))
             return [new Section
             {
@@ -152,16 +152,16 @@ public sealed partial class DocxSectionParser
         {
             var b = blocks[i];
 
-            // Début d'annexe : un paragraphe court "נספח א" seul sur sa ligne.
+            // Start of an annex: a short paragraph "נספח א" alone on its line.
             if (!b.IsTable && AnnexStart.Match(b.Text) is { Success: true } annex)
             {
                 Close();
                 inAnnex = true;
                 var title = i + 1 < blocks.Count && !blocks[i + 1].IsTable && blocks[i + 1].Label is null ? blocks[i + 1].Text : "";
-                // L'historique des modifications n'aide pas à trouver une règle : on l'ignore.
+                // The change log does not help find a rule: it is skipped.
                 skipAnnex = title.Contains("טבלת שינויים") || title.Contains("טבלת השינויים");
                 current = new Draft(annex.Value.Trim(), title, SectionKind.Annex);
-                if (title.Length > 0) i++; // le titre est porté par "Heading"
+                if (title.Length > 0) i++; // the title is carried by "Heading"
                 continue;
             }
 
@@ -187,7 +187,7 @@ public sealed partial class DocxSectionParser
                 continue;
             }
 
-            // Texte sans numéro ou sous-niveau : rattaché à la section en cours.
+            // Unnumbered text or sub-level: attached to the current section.
             current ??= new Draft(headingLabel ?? "0", heading, SectionKind.Body);
             current.Append(b.Label is null || b.IsTable ? b.Text : $"{b.Label}. {b.Text}");
         }
@@ -195,7 +195,7 @@ public sealed partial class DocxSectionParser
 
         if (sections.Count == 0 && blocks.Count > 0)
         {
-            // Directive sans structure (ex. 1.3.3 : un seul paragraphe de renvoi).
+            // Directive without structure (e.g. 1.3.3: a single cross-reference paragraph).
             sections.Add(new Section
             {
                 Id = Section.MakeId(code, 0), DirectiveCode = code, Order = 0, Label = "",
@@ -223,16 +223,16 @@ public sealed partial class DocxSectionParser
     [GeneratedRegex(@"\s+")]
     private static partial Regex Spaces();
 
-    // ------------------------------------------------------------------ calcul de la numérotation Word
+    // ------------------------------------------------------------------ Word numbering computation
 
     /// <summary>
-    /// Reproduit la numérotation automatique de Word. Un paragraphe est numéroté :
-    /// (1) par ses propres propriétés (w:numPr), (2) par son style ou un style parent (basedOn),
-    /// (3) ou par un niveau de liste qui désigne son style (w:lvl/w:pStyle).
-    /// Les titres et sections forment un "plan" : Word les numérote comme une seule hiérarchie même quand ils
-    /// sont définis dans des listes différentes (vérifié avec Word sur 1.10.1 et 1.6.5). On tient donc un compteur
-    /// de plan commun pour ces niveaux, et des compteurs par liste pour les simples listes numérotées.
-    /// Un niveau remet à zéro les niveaux inférieurs.
+    /// Reproduces Word's automatic numbering. A paragraph is numbered:
+    /// (1) by its own properties (w:numPr), (2) by its style or a parent style (basedOn),
+    /// (3) or by a list level that points to its style (w:lvl/w:pStyle).
+    /// Headings and sections form an "outline": Word numbers them as a single hierarchy even when they
+    /// are defined in different lists (checked with Word on 1.10.1 and 1.6.5). So we keep one shared outline
+    /// counter for these levels, and per-list counters for plain numbered lists.
+    /// A level resets the levels below it.
     /// </summary>
     private sealed partial class NumberingResolver
     {
@@ -305,19 +305,19 @@ public sealed partial class DocxSectionParser
 
             var label = PlaceHolder().Replace(info.Text, m =>
                 Math.Max(counters[int.Parse(m.Groups[1].Value) - 1], 1).ToString()).TrimEnd('.', ')');
-            // Une simple liste numérotée n'est pas un niveau de plan : on garde son numéro dans le texte.
+            // A plain numbered list is not an outline level: its number stays in the text.
             return (label, outline ? level : null);
         }
 
         /// <summary>
-        /// Niveau de plan : titre de premier niveau (niveau de liste lié à un style, ou style de niveau hiérarchique 0)
-        /// ou sous-niveau dont le numéro reprend celui du parent (ex. "%1.%2.").
+        /// Outline level: top-level heading (list level linked to a style, or a style with outline level 0)
+        /// or a sub-level whose number includes the parent's (e.g. "%1.%2.").
         /// </summary>
         private bool IsOutline(Paragraph p, string abs, int level, LevelInfo info)
         {
             if (level > 0) return info.Text!.Contains("%1");
             if (_levelByStyle.Any(kv => kv.Value == (abs, 0))) return true;
-            // Liste hiérarchique dont le niveau 2 reprend le numéro du niveau 1 ("%1.%2.") : c'est un plan.
+            // Hierarchical list whose level 2 includes the level 1 number ("%1.%2."): it is an outline.
             if (_levels.TryGetValue((abs, 1), out var sub) && sub.Text?.Contains("%1") == true) return true;
             var styleId = p.ParagraphProperties?.ParagraphStyleId?.Val?.Value;
             for (var guard = 0; styleId is not null && guard < 15; guard++)
@@ -335,15 +335,15 @@ public sealed partial class DocxSectionParser
             var numPr = pPr?.NumberingProperties;
             var styleId = pPr?.ParagraphStyleId?.Val?.Value;
 
-            // (1) numérotation portée par le paragraphe
+            // (1) numbering set on the paragraph itself
             if (numPr?.NumberingId?.Val?.Value is { } pNum)
             {
-                if (pNum == 0) return (null, 0); // numId 0 = numérotation explicitement retirée
+                if (pNum == 0) return (null, 0); // numId 0 = numbering explicitly removed
                 var lvl = numPr.NumberingLevelReference?.Val?.Value ?? StyleLevel(styleId) ?? 0;
                 return (_numToAbstract.GetValueOrDefault(pNum.ToString()), lvl);
             }
 
-            // (2) et (3) : remonter la chaîne de styles
+            // (2) and (3): walk up the style chain
             int? inheritedLevel = numPr?.NumberingLevelReference?.Val?.Value;
             var sid = styleId ?? "Normal";
             for (var guard = 0; sid is not null && guard < 15; guard++)

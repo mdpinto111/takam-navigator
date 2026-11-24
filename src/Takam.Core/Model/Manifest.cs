@@ -4,8 +4,8 @@ using System.Text.Json.Serialization;
 namespace Takam.Core.Model;
 
 /// <summary>
-/// Liste des directives téléchargées, avec leurs métadonnées.
-/// Même format pour l'échantillon versionné (data/sample) et pour une ingestion en ligne (data/raw).
+/// List of downloaded directives, with their metadata.
+/// Same format for the versioned sample (data/sample) and for an online ingestion (data/raw).
 /// </summary>
 public sealed record Manifest
 {

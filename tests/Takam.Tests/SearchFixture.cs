@@ -7,9 +7,9 @@ using Takam.Core.Text;
 namespace Takam.Tests;
 
 /// <summary>
-/// Faux modèle d'embeddings, déterministe et sans fichier : chaque mot (sans préfixe) est haché dans une dimension.
-/// Deux textes qui partagent des mots sont proches. Suffisant pour tester la mécanique (fusion, seuils, regroupement)
-/// sans dépendre du vrai modèle.
+/// Fake embedding model, deterministic and file-free: each word (without prefix) is hashed into one dimension.
+/// Two texts that share words are close. Enough to test the mechanics (fusion, thresholds, grouping)
+/// without depending on the real model.
 /// </summary>
 public sealed class FakeEmbeddingService : IEmbeddingService
 {
@@ -23,13 +23,13 @@ public sealed class FakeEmbeddingService : IEmbeddingService
         var v = new float[Dimensions];
         foreach (var t in HebrewText.QueryTerms(text))
             v[(int)((uint)HebrewText.Variants(t)[^1].GetHashCode(StringComparison.Ordinal) % Dimensions)] += 1;
-        v[0] += 0.01f; // évite le vecteur nul
+        v[0] += 0.01f; // avoids the zero vector
         VectorMath.NormalizeInPlace(v);
         return v;
     }
 }
 
-/// <summary>Base de test construite une fois à partir de quelques directives réelles de l'échantillon.</summary>
+/// <summary>Test database built once from a few real directives of the sample.</summary>
 public sealed class SearchFixture : IDisposable
 {
     public static readonly string[] Codes = ["1.4.3", "1.4.5", "1.6.5", "1.10.1", "1.3.3"];

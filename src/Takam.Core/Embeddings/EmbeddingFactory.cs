@@ -6,21 +6,21 @@ namespace Takam.Core.Embeddings;
 public static class EmbeddingFactory
 {
     /// <summary>
-    /// Charge le modèle s'il est configuré et présent ; sinon renvoie null et l'application fonctionne
-    /// en recherche par mots seulement (dégradation contrôlée, signalée dans les logs et /api/health).
+    /// Loads the model if it is configured and present; otherwise returns null and the application runs
+    /// with keyword search only (controlled degradation, reported in the logs and /api/health).
     /// </summary>
     public static IEmbeddingService? TryCreate(EmbeddingOptions options, ILogger logger)
     {
         if (!options.Enabled)
         {
-            logger.LogWarning("Embeddings désactivés par configuration : recherche par mots seulement.");
+            logger.LogWarning("Embeddings disabled by configuration: keyword search only.");
             return null;
         }
         var model = RepoPaths.Resolve(options.ModelPath);
         var spm = RepoPaths.Resolve(options.SentencePiecePath);
         if (!File.Exists(model) || !File.Exists(spm))
         {
-            logger.LogWarning("Modèle d'embeddings absent ({Model}) : recherche par mots seulement. Lancer scripts/download-model.ps1.", model);
+            logger.LogWarning("Embedding model missing ({Model}): keyword search only. Run scripts/download-model.ps1.", model);
             return null;
         }
         try
@@ -29,7 +29,7 @@ public static class EmbeddingFactory
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Échec du chargement du modèle d'embeddings : recherche par mots seulement.");
+            logger.LogError(ex, "Failed to load the embedding model: keyword search only.");
             return null;
         }
     }

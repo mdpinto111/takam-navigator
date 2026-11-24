@@ -7,7 +7,7 @@ public class HebrewTextTests
     [Theory]
     [InlineData("תכ\"ם", "תכם")]
     [InlineData("תכ״ם", "תכם")]       // gershayim
-    [InlineData("תכ''ם", "תכם")]      // deux apostrophes, fréquent dans les .docx
+    [InlineData("תכ''ם", "תכם")]      // two apostrophes, common in the .docx files
     [InlineData("מט\"ח", "מטח")]
     public void Abbreviation_quotes_are_unified(string input, string expected) =>
         Assert.Equal(expected, HebrewText.Normalize(input));
@@ -27,7 +27,7 @@ public class HebrewTextTests
     [Fact]
     public void Variants_keep_a_stem_of_at_least_three_letters()
     {
-        Assert.Equal(["בית"], HebrewText.Variants("בית"));   // "ית" serait trop court
+        Assert.Equal(["בית"], HebrewText.Variants("בית"));   // "ית" would be too short
         Assert.DoesNotContain("ספ", HebrewText.Variants("לספ"));
     }
 
@@ -48,7 +48,7 @@ public class HebrewTextTests
     {
         Assert.Equal("", HebrewText.Normalize("   "));
         Assert.Empty(HebrewText.QueryTerms(null));
-        Assert.Empty(HebrewText.QueryTerms("מה האם של"));     // que des mots vides
+        Assert.Empty(HebrewText.QueryTerms("מה האם של"));     // stop words only
     }
 
     [Fact]

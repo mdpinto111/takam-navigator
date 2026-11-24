@@ -4,9 +4,9 @@ using Takam.Core.Text;
 namespace Takam.Core.Search;
 
 /// <summary>
-/// Construit l'extrait affiché : la fenêtre du texte qui contient le plus de mots de la requête,
-/// avec la position des mots à surligner. Un mot du texte correspond s'il partage une forme sans préfixe
-/// avec un mot de la requête ("בתשלום" correspond à "תשלום").
+/// Builds the displayed snippet: the window of text that contains the most query words,
+/// with the positions of the words to highlight. A word in the text matches if it shares a prefix-less form
+/// with a query word ("בתשלום" matches "תשלום").
 /// </summary>
 public static partial class SnippetBuilder
 {
@@ -28,7 +28,7 @@ public static partial class SnippetBuilder
         if (flat.Length <= length)
             return (flat, hits.Select(h => new HighlightRange(h.Start, h.Length)).ToList());
 
-        // Fenêtre qui couvre le plus de mots trouvés.
+        // Window that covers the most matched words.
         var bestStart = 0; var bestCount = 0;
         for (var i = 0; i < hits.Count; i++)
         {

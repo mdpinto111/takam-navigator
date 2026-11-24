@@ -6,12 +6,12 @@ using Takam.Core.Text;
 namespace Takam.Core.Storage;
 
 /// <summary>
-/// Accès en lecture à la base de recherche. Les sections et les vecteurs sont chargés en mémoire au démarrage
-/// (quelques Mo pour un chapitre) ; la recherche par mots interroge l'index FTS5 de SQLite.
+/// Read access to the search database. Sections and vectors are loaded into memory at startup
+/// (a few MB for one chapter); keyword search queries SQLite's FTS5 index.
 /// </summary>
 public sealed class SearchIndex : IDisposable
 {
-    /// <param name="IndexTokens">Formes des mots de la section, avec titre et mots-clés de la directive (sert au seuil de confiance).</param>
+    /// <param name="IndexTokens">Word forms of the section, plus the directive's title and keywords (used by the confidence threshold).</param>
     public sealed record StoredSection(Section Section, Directive Directive, IReadOnlySet<string> IndexTokens);
     public sealed record ChunkVector(string SectionId, float[] Vector);
 
@@ -33,14 +33,14 @@ public sealed class SearchIndex : IDisposable
     public static SearchIndex Open(string databasePath)
     {
         if (!File.Exists(databasePath))
-            throw new FileNotFoundException("Base de recherche introuvable : lancer d'abord l'ingestion (Takam.Ingestion build).", databasePath);
+            throw new FileNotFoundException("Search database not found: run the ingestion first (Takam.Ingestion build).", databasePath);
 
         var cn = new SqliteConnection($"Data Source={databasePath};Mode=ReadOnly");
         cn.Open();
         var meta = Query(cn, "SELECT key, value FROM meta", r => (r.GetString(0), r.IsDBNull(1) ? "" : r.GetString(1)))
             .ToDictionary(x => x.Item1, x => x.Item2);
         if (meta.GetValueOrDefault("schema_version") != SearchIndexBuilder.SchemaVersion.ToString())
-            throw new InvalidDataException("Version de schéma inattendue : reconstruire l'index.");
+            throw new InvalidDataException("Unexpected schema version: rebuild the index.");
 
         var directives = Query(cn, "SELECT code, name, sfid, code_text, main_chapter, sub_chapter, keywords, edition, valid_from FROM directives",
             r => new Directive
@@ -68,9 +68,9 @@ public sealed class SearchIndex : IDisposable
     }
 
     /// <summary>
-    /// Recherche plein texte. Chaque mot de la requête devient (mot OU variantes sans préfixe), et les mots sont
-    /// reliés par OU : BM25 classe en tête les sections qui contiennent le plus de mots, et les plus rares.
-    /// Poids des colonnes : titre de la directive 8, mots-clés 4, titre du chapitre 3, texte 1.
+    /// Full-text search. Each query word becomes (word OR its prefix-less variants), and the words are
+    /// joined with OR: BM25 ranks first the sections that contain the most words, and the rarest ones.
+    /// Column weights: directive title 8, keywords 4, chapter title 3, text 1.
     /// </summary>
     public IReadOnlyList<(string SectionId, double Score)> KeywordSearch(IReadOnlyList<string> terms, int limit)
     {
@@ -88,7 +88,7 @@ public sealed class SearchIndex : IDisposable
             cmd.Parameters.AddWithValue("$limit", limit);
             using var r = cmd.ExecuteReader();
             var list = new List<(string, double)>();
-            while (r.Read()) list.Add((r.GetString(0), -r.GetDouble(1))); // bm25() : plus petit = meilleur
+            while (r.Read()) list.Add((r.GetString(0), -r.GetDouble(1))); // bm25(): lower = better
             return list;
         }
     }
