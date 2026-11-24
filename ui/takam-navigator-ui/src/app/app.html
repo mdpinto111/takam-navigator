@@ -1,0 +1,103 @@
+<header class="top">
+  <div class="brand">
+    <h1>מאתר הוראות תכ"ם</h1>
+    <p>כתבו שאלה במילים שלכם – ונמצא את ההוראה ואת הסעיף שעוסקים בה</p>
+  </div>
+</header>
+
+<main>
+  <form class="search" (ngSubmit)="search()" role="search">
+    <input type="search" name="q" [ngModel]="query()" (ngModelChange)="query.set($event)"
+           placeholder="לדוגמה: תוך כמה ימים צריך לשלם לספק?" aria-label="שאלה" maxlength="300" autofocus />
+    <select name="mode" [ngModel]="mode()" (ngModelChange)="mode.set($event)" aria-label="סוג חיפוש">
+      @for (m of modes; track m.value) { <option [value]="m.value">{{ m.label }}</option> }
+    </select>
+    <button type="submit" [disabled]="!canSearch()">{{ loading() ? 'מחפש…' : 'חיפוש' }}</button>
+  </form>
+
+  <div class="examples">
+    <span>דוגמאות:</span>
+    @for (e of examples; track e) {
+      <button type="button" class="chip" (click)="search(e)">{{ e }}</button>
+    }
+  </div>
+
+  @if (error(); as err) {
+    <div class="alert error" role="alert">{{ err }}</div>
+  }
+
+  @if (response(); as r) {
+    @if (!r.found) {
+      <div class="alert empty" role="status">
+        <strong>{{ r.message }}</strong>
+        <p>נסו לנסח אחרת, או חפשו לפי מספר ההוראה (למשל 1.4.3).</p>
+      </div>
+    } @else {
+      <p class="summary">{{ r.results.length }} הוראות רלוונטיות · <bdi dir="ltr">{{ r.elapsedMs }} ms</bdi>
+        @if (r.mode !== mode()) { · <span class="warn">חיפוש לפי מילים בלבד (מודל המשמעות אינו זמין)</span> }
+      </p>
+      <ol class="results">
+        @for (hit of r.results; track hit.sectionId) {
+          <li class="card">
+            <div class="path">
+              <span class="code">{{ hit.directiveCode }}</span>
+              <span class="name">{{ hit.directiveName }}</span>
+              <span class="sep">›</span>
+              <button type="button" class="link section" (click)="openSection(hit.sectionId)">
+                {{ sectionTitle(hit.sectionLabel, hit.sectionHeading) }}
+              </button>
+              @if (hit.sectionHeading && !hit.sectionLabel.startsWith('נספח')) { <span class="heading">({{ hit.sectionHeading }})</span> }
+            </div>
+            <p class="snippet">@for (s of segments(hit); track $index) {@if (s.mark) {<mark>{{ s.text }}</mark>} @else {{{ s.text }}}}</p>
+            <div class="meta">
+              <span>מהדורה {{ hit.edition }}@if (hit.validFrom) { · בתוקף מ-{{ hit.validFrom }} }</span>
+              <span class="badge" [attr.data-kind]="hit.matchedBy">נמצא לפי: {{ matchLabel(hit) }}</span>
+              <a [href]="hit.officialUrl" target="_blank" rel="noopener">לנוסח הרשמי באתר ↗</a>
+            </div>
+            @if (hit.otherSections.length) {
+              <div class="others">
+                סעיפים נוספים:
+                @for (o of hit.otherSections; track o.sectionId) {
+                  <button type="button" class="chip small" (click)="openSection(o.sectionId)">{{ sectionTitle(o.label, o.heading) }}</button>
+                }
+              </div>
+            }
+          </li>
+        }
+      </ol>
+    }
+  }
+
+  @if (section(); as s) {
+    <aside class="panel" role="dialog" aria-label="הסעיף המלא">
+      <div class="panel-head">
+        <div>
+          <div class="path"><span class="code">{{ s.directive.code }}</span> <span class="name">{{ s.directive.name }}</span></div>
+          <h2>{{ sectionTitle(s.label, s.heading) }} @if (s.heading && !s.label.startsWith('נספח')) { <small>– {{ s.heading }}</small> }</h2>
+        </div>
+        <button type="button" class="close" (click)="closeSection()" aria-label="סגירה">✕</button>
+      </div>
+      <div class="panel-text">{{ s.text }}</div>
+      <div class="meta">
+        <span>מהדורה {{ s.directive.edition }}</span>
+        <a [href]="s.directive.officialUrl" target="_blank" rel="noopener">לנוסח הרשמי באתר ↗</a>
+      </div>
+      <nav class="toc" aria-label="סעיפי ההוראה">
+        @for (x of s.sections; track x.order) {
+          <button type="button" class="chip small" [class.active]="x.order === s.order"
+                  (click)="openSection(s.directive.code + '#' + x.order)">{{ x.label || 'כל ההוראה' }}</button>
+        }
+      </nav>
+    </aside>
+  }
+</main>
+
+<footer>
+  @if (health(); as h) {
+    <span [attr.data-status]="h.status">מאגר: {{ h.index?.directives }} הוראות, {{ h.index?.sections }} סעיפים · נכון ל-{{ h.index?.fetchedAt }}
+      @if (!h.semantic) { · חיפוש לפי מילים בלבד }</span>
+  } @else {
+    <span data-status="Unhealthy">שירות החיפוש אינו זמין</span>
+  }
+  <span>אב-טיפוס · המקור המחייב הוא האתר הרשמי takam.mof.gov.il</span>
+</footer>

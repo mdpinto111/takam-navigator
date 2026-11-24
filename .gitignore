@@ -1,0 +1,15 @@
+bin/
+obj/
+.vs/
+*.user
+# modèle d'embeddings (téléchargé par scripts/download-model.ps1)
+models/
+# données générées
+data/raw/
+data/*.db
+data/*.db-*
+data/*.building
+# Angular
+ui/**/node_modules/
+ui/**/dist/
+ui/**/.angular/

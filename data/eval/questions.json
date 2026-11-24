@@ -1,0 +1,194 @@
+[
+  {
+    "id": "Q01",
+    "query": "תוך כמה ימים צריך לשלם לספק",
+    "keywords": "ימים תשלום ספק",
+    "expectedDirective": "1.4.3",
+    "expectedSectionContains": "לא יאוחר מ-45 ימים",
+    "kind": "content"
+  },
+  {
+    "id": "Q02",
+    "query": "מועד תשלום עבודות הנדסה בנאיות",
+    "keywords": "הנדסה בנאיות",
+    "expectedDirective": "1.4.3",
+    "expectedSectionContains": "לא יאוחר מ- 85 ימים",
+    "kind": "title-words"
+  },
+  {
+    "id": "Q03",
+    "query": "איחור בתשלום לספק",
+    "keywords": "איחור בתשלום",
+    "expectedDirective": "1.4.3",
+    "expectedSectionContains": "עיכוב בתשלום",
+    "kind": "synonym"
+  },
+  {
+    "id": "Q04",
+    "query": "ריבית על פיגור בתשלום לספק",
+    "keywords": "ריבית פיגור",
+    "expectedDirective": "1.4.3",
+    "expectedSectionContains": "פיגורים במועדי תשלום",
+    "kind": "content"
+  },
+  {
+    "id": "Q05",
+    "query": "האם מותר לשלם מקדמה לספק",
+    "keywords": "מקדמה לספק",
+    "expectedDirective": "1.4.5",
+    "expectedSectionContains": "רשאי לבצע תשלום מקדמה",
+    "kind": "title-words"
+  },
+  {
+    "id": "Q06",
+    "query": "איפה שומרים שיקים ומסמכים כספיים",
+    "keywords": "שמירת שיקים",
+    "expectedDirective": "1.10.1",
+    "expectedSectionContains": "יחזיקם בקופת הביטחון",
+    "kind": "content"
+  },
+  {
+    "id": "Q07",
+    "query": "הכספת התקלקלה מה עושים עם המסמכים",
+    "keywords": "כספת",
+    "expectedDirective": "1.10.1",
+    "expectedSectionContains": "בשל קלקול",
+    "kind": "synonym"
+  },
+  {
+    "id": "Q08",
+    "query": "קיבלנו צו עיקול על כספים של ספק",
+    "keywords": "צו עיקול",
+    "expectedDirective": "1.6.6",
+    "expectedSectionContains": "צווי עיקול",
+    "kind": "content"
+  },
+  {
+    "id": "Q09",
+    "query": "קיזוז חוב של ספק מתשלום",
+    "keywords": "קיזוז חוב",
+    "expectedDirective": "1.6.6",
+    "expectedSectionContains": "רשאי לבצע קיזוז",
+    "kind": "title-words"
+  },
+  {
+    "id": "Q10",
+    "query": "ספק שרוצה להעביר את התשלום לחברת פקטורינג",
+    "keywords": "פקטורינג",
+    "expectedDirective": "1.6.6",
+    "expectedSectionContains": "במסגרת פקטורינג",
+    "kind": "content"
+  },
+  {
+    "id": "Q11",
+    "query": "ספק נחסם כי אין לו אישור ניהול ספרים",
+    "keywords": "אישור ניהול ספרים",
+    "expectedDirective": "1.9.1",
+    "expectedSectionContains": "נחסם במערכת סיגמה",
+    "kind": "content"
+  },
+  {
+    "id": "Q12",
+    "query": "כמה עובדים צריכים לבדוק חשבונית לפני תשלום",
+    "keywords": "בדיקת חשבונית",
+    "expectedDirective": "1.4.2",
+    "expectedSectionContains": "לכל הפחות על ידי 2 עובדים",
+    "kind": "content"
+  },
+  {
+    "id": "Q13",
+    "query": "אילו פרטים חייבים להופיע בחשבונית של ספק",
+    "keywords": "פרטי חשבונית",
+    "expectedDirective": "1.4.2",
+    "expectedSectionContains": "יוודא כי החשבון כולל את הפרטים הבאים",
+    "kind": "content"
+  },
+  {
+    "id": "Q14",
+    "query": "ריבית והצמדה בתשלום פסק דין נגד המדינה",
+    "keywords": "פסק דין ריבית",
+    "expectedDirective": "1.5.3",
+    "expectedSectionContains": "הפרשי ריבית והצמדה",
+    "kind": "title-words"
+  },
+  {
+    "id": "Q15",
+    "query": "מה עושים כשהתקציב לא אושר בזמן",
+    "keywords": "תקציב לא אושר",
+    "expectedDirective": "1.2.2",
+    "expectedSectionContains": "תקציב המשכי",
+    "kind": "synonym"
+  },
+  {
+    "id": "Q16",
+    "query": "רכישה בכרטיס אשראי של המשרד",
+    "keywords": "כרטיס אשראי",
+    "expectedDirective": "1.6.2",
+    "expectedSectionContains": "רכישות באמצעות כרטיסים",
+    "kind": "content"
+  },
+  {
+    "id": "Q17",
+    "query": "תשלום בדולרים לספק בחוץ לארץ",
+    "keywords": "תשלום בדולרים",
+    "expectedDirective": "1.6.4",
+    "expectedSectionContains": "במטבע חוץ",
+    "kind": "synonym"
+  },
+  {
+    "id": "Q18",
+    "query": "מי מורשה לחתום בחשבון הבנק של המשרד",
+    "keywords": "מורשי חתימה",
+    "expectedDirective": "1.6.5",
+    "expectedSectionContains": "קבוצות מורשי החתימה",
+    "kind": "content"
+  },
+  {
+    "id": "Q19",
+    "query": "פתיחת קופה קטנה ביחידה",
+    "keywords": "קופה קטנה",
+    "expectedDirective": "1.5.2",
+    "expectedSectionContains": "פתיחת קופת מזומן ביחידה",
+    "kind": "synonym"
+  },
+  {
+    "id": "Q20",
+    "query": "1.4.5",
+    "keywords": "1.4.5",
+    "expectedDirective": "1.4.5",
+    "expectedSectionContains": null,
+    "kind": "number"
+  },
+  {
+    "id": "Q21",
+    "query": "מה מזג האוויר מחר בתל אביב",
+    "keywords": "מזג אוויר",
+    "expectedDirective": null,
+    "expectedSectionContains": null,
+    "kind": "off-topic"
+  },
+  {
+    "id": "Q22",
+    "query": "מתכון לעוגת שוקולד בלי ביצים",
+    "keywords": "עוגת שוקולד",
+    "expectedDirective": null,
+    "expectedSectionContains": null,
+    "kind": "off-topic"
+  },
+  {
+    "id": "Q23",
+    "query": "איך מחדשים דרכון שפג תוקפו",
+    "keywords": "חידוש דרכון",
+    "expectedDirective": null,
+    "expectedSectionContains": null,
+    "kind": "off-topic"
+  },
+  {
+    "id": "Q24",
+    "query": "מי זכה באליפות הכדורגל השנה",
+    "keywords": "אליפות כדורגל",
+    "expectedDirective": null,
+    "expectedSectionContains": null,
+    "kind": "off-topic"
+  }
+]

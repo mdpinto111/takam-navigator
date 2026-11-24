@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Takam.Api/Takam.Api.csproj" />
+    <Project Path="src/Takam.Core/Takam.Core.csproj" />
+    <Project Path="src/Takam.Ingestion/Takam.Ingestion.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Takam.Tests/Takam.Tests.csproj" />
+  </Folder>
+</Solution>
